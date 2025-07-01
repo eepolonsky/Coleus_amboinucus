@@ -1,0 +1,131 @@
+#Dorado basecalling and demux
+dorado basecaller dna_r10.4.1_e8.2_apk_sup@v5.0.0 . --kit-name SQK-RBK114-24 > basecall.bam
+dorado demux --emit-fastq --output-dir demux_output --no-classify basecall.bam
+
+#Nanoplot
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+conda create -n nanoplot_env python=3.7
+conda install -c bioconda nanoplot
+conda activate nanoplot_env
+
+NanoPlot --fastq 173e2c0e-3aae-4825-a2cf-18f1ce304370_SQK-RBK114-24_barcode01.fastq --outdir nanoplot_output1
+NanoPlot --fastq 173e2c0e-3aae-4825-a2cf-18f1ce304370_SQK-RBK114-24_barcode02.fastq --outdir nanoplot_output2
+NanoPlot --fastq 173e2c0e-3aae-4825-a2cf-18f1ce304370_SQK-RBK114-24_barcode03.fastq --outdir nanoplot_output3
+NanoPlot --fastq 173e2c0e-3aae-4825-a2cf-18f1ce304370_SQK-RBK114-24_barcode04.fastq --outdir nanoplot_output4
+
+#Flye assembly for genome
+conda create -n flye_env python=3.11
+conda activate flye_env
+conda install -c bioconda -c conda-forge flye
+
+cat 173e2c0e-3aae-4825-a2cf-18f1ce304370_SQK-RBK114-24_barcode01.fastq \
+173e2c0e-3aae-4825-a2cf-18f1ce304370_SQK-RBK114-24_barcode02.fastq \
+173e2c0e-3aae-4825-a2cf-18f1ce304370_SQK-RBK114-24_barcode03.fastq \
+173e2c0e-3aae-4825-a2cf-18f1ce304370_SQK-RBK114-24_barcode04.fastq \
+> all_used_barcodes.fastq
+
+flye --nano-raw all_used_barcodes.fastq -o flye_assembly 
+
+#Assembly Busco
+conda create -n busco_env python=3.9
+conda activate busco_env
+conda install bioconda::busco
+
+run_BUSCO.py -i assembly.fasta -m geno -o busco_output --config /home/eepolonsky/miniconda3/envs/busco_env/config/config.ini -l embryophyta -f
+
+emacs /home/eepolonsky/miniconda3/envs/busco_env/config/config.ini
+
+#Coleus Amboinicus chloroplast assembly
+efetch -db nucleotide -id PP894695.1 -format fasta > Plectranthus_barbatus_PP894695.1_cp.fasta
+
+
+minimap2 -ax map-ont ~/Lamiaceae_Species_Files/Coleus_barbatus_genome/Plectranthus_barbatus_PP894695.1_cp.fasta all_used_barcodes.fastq > cp_mapping.sam
+
+
+samtools view -Sb -F 4 cp_mapping.sam > cp_mapping.bam
+
+
+samtools fastq cp_mapping.bam > amboinicus_cp_reads.fastq
+
+
+flye --nano-raw amboinicus_cp_reads.fastq --out-dir flye_chloroplast --genome-size 150k --threads 8
+
+#Circulator
+pip3 install circlator
+conda install -c bioconda mummer
+
+circlator all --merge_min_id 85 --merge_breaklen 1000 assembly.fasta ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq circulator_cp
+
+Mummer-circulator
+https://github.com/mummer4/mummer?tab=readme-ov-file
+nucmer  -p coleus_amboinicus_cp  ~/Lamiaceae_Species_Files/Coleus_barbatus_genome/Plectranthus_barbatus_PP894695.1_cp.fasta  ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/flye_chloroplast/circulator_cp/06.fixstart.fasta
+
+delta-filter -1 coleus_amboinicus_cp.delta > coleus_amboinicus_cp.filtered.delta
+
+conda install -c conda-forge gnuplot=5.4
+
+mummerplot --filter -png  --layout -p coleus_amboinicus_cp_plot coleus_amboinicus_cp.filtered.delta
+
+show-coords -rcl coleus_amboinicus_cp.filtered.delta > circulator_coords.txt
+
+#Mummer-Flye
+nucmer  -p coleus_amboinicus_flye_cp  ~/Lamiaceae_Species_Files/Coleus_barbatus_genome/Plectranthus_barbatus_PP894695.1_cp.fasta  ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/flye_chloroplast/assembly.fasta
+
+delta-filter -1 coleus_amboinicus_flye_cp.delta > coleus_amboinicus_flye_cp.filtered.delta
+
+conda install -c conda-forge gnuplot=5.4
+
+mummerplot --filter -png  --layout -p coleus_amboinicus_flye_cp_plot coleus_amboinicus_flye_cp.filtered.delta
+
+#Extracting sequences for cp assembly
+samtools faidx assembly.fasta contig_6:20755-26916 > contig_6:20755-26916_reverse
+samtools faidx assembly.fasta contig_6:1-20629 > contig_6:1-20629_reverse
+samtools faidx assembly.fasta contig_2:1-5129 > contig_2:1-5129
+samtools faidx assembly.fasta contig_2:5188-12220 > contig_2:5188-12220
+samtools faidx assembly.fasta contig_4:1-42648 > contig_4:1-42648_reverse
+samtools faidx assembly.fasta contig_3:1-17648 > contig_3:1-17648_reverse
+samtools faidx assembly.fasta contig_6:26919-52609 > contig_6:26919-52609
+
+#reverse complement files
+seqtk seq -r contig_6:20755-26916_reverse > contig_6:20755-26916_reverse_complement.fa
+
+OUT="cp_scaffolded.fasta"
+N_GAP=100
+segments=(
+  "contig_6:20755-26916_reverse_complement.fa"
+  "contig_6:1-20629_reverse_complement.fa"
+  "contig_2:1-5129"
+  "contig_2:5188-12220"
+  "contig_4:1-42648_reverse_complement.fa"
+  "contig_3:1-17648_reverse_complement.fa"
+  "contig_6:26919-52609"
+)
+for f in "${segments[@]}"; do
+  header=$(basename "$f" .fa)
+
+  echo ">$header" >> "$OUT"
+  grep -v "^>" "$f" >> "$OUT"
+  if [[ "$f" != "${segments[-1]}" ]]; then
+    echo ">gap_${header}" >> "$OUT"
+    printf 'N%.0s' $(seq 1 $N_GAP) >> "$OUT"
+    echo "" >> "$OUT"
+  fi
+done
+grep -v "^>" cp_scaffolded.fasta | tr -d '\n' | sed '1i>scaffold' > cp_scaffolded_linear.fasta
+
+#Locating inverted repeats emboss
+conda install -c bioconda emboss
+einverted -sequence assembly.fasta -gap 12 -threshold 10 -match 3 -mismatch -4 -outfile assembly_10.fasta.einverted -outseq cp_inverted_repeats_assembly_10.fasta
+
+
+
+
+
+
+
+
+
+
+
+
