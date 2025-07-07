@@ -114,19 +114,25 @@ for f in "${segments[@]}"; do
 done
 grep -v "^>" cp_scaffolded.fasta | tr -d '\n' | sed '1i>scaffold' > cp_scaffolded_linear.fasta
 
-#Locating inverted repeats emboss
-conda install -c bioconda emboss
-einverted -sequence assembly.fasta -gap 12 -threshold 10 -match 3 -mismatch -4 -outfile assembly_10.fasta.einverted -outseq cp_inverted_repeats_assembly_10.fasta
+#Extracting inverted repeat gene regions
+awk '
+BEGIN {
+  while (getline gene < "gene_list.txt") genes[gene]=1;
+}
+$3 == "gene" {
+  split($9, attrs, ";");
+  for (i in attrs) {
+    if (attrs[i] ~ /^gene=/) {
+      split(attrs[i], kv, "=");
+      gene_name = kv[2];
+      if (gene_name in genes)
+        print $1, $4, $5, gene_name;
+    }
+  }
+}
+' GeSeqJob-20250705-173313_scaffold_GFF3.gff3 > filtered_genes_coordinates.tsv
 
-#Locating inverted repeats using self blast
-makeblastdb -in cp_scaffolded_linear.fasta -dbtype nucl -out cp_db
-
-blastn -db cp_db -query cp_scaffolded_linear.fasta -outfmt 6 -out cp_self_blast.out -num_threads 40
-
-
-
-
-
+sort filtered_genes_coordinates.tsv | uniq > genes_no_duplicates.txt
 
 
 
