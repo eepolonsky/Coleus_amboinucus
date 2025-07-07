@@ -121,7 +121,7 @@ einverted -sequence assembly.fasta -gap 12 -threshold 10 -match 3 -mismatch -4 -
 #Locating inverted repeats using self blast
 makeblastdb -in cp_scaffolded_linear.fasta -dbtype nucl -out cp_db
 
-blastn -db cp_scaffolded_linear.fasta -query cp_scaffolded_linear.fasta -outfmt 6 -out cp_sefl_blast.out -num_threads 40
+blastn -db cp_db -query cp_scaffolded_linear.fasta -outfmt 6 -out cp_self_blast.out -num_threads 40
 
 
 
