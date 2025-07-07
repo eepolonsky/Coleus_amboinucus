@@ -135,6 +135,26 @@ $3 == "gene" {
 sort filtered_genes_coordinates.tsv | uniq > genes_no_duplicates.txt
 
 
+#assemble with repeat
+amtools faidx cp_scaffolded_linear.fasta scaffold:101255-125535 > repeat_region_101255_125535
+
+seqtk seq -r  repeat_region_101255_125535 > repeat_region_101255_125535_reverse_complement
+
+bioawk -c fastx '{print ">"$name"\n"substr($seq, 1, 82102)}' cp_scaffolded_linear.fasta > left_cp.fasta
+
+bioawk -c fastx '{print ">"$name"\n"substr($seq, 82103)}' cp_scaffolded_linear.fasta > right_cp.fasta
+
+cat left_cp.fasta repeat_region_101255_125535_reverse_complement right_cp.fasta > cp_scaffolded_linear_with_repeat.fasta
+
+(
+    echo ">cp_scaffolded_linear_with_repeat"
+    grep -v "^>" left_cp.fasta
+    grep -v "^>" cp_scaffolded_linear_with_repeat.fasta
+    grep -v "^>" right_cp.fasta
+) > cp_scaffolded_linear_with_repeat
+
+
+
 
 
 
