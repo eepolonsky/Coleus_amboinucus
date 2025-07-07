@@ -118,6 +118,14 @@ grep -v "^>" cp_scaffolded.fasta | tr -d '\n' | sed '1i>scaffold' > cp_scaffolde
 conda install -c bioconda emboss
 einverted -sequence assembly.fasta -gap 12 -threshold 10 -match 3 -mismatch -4 -outfile assembly_10.fasta.einverted -outseq cp_inverted_repeats_assembly_10.fasta
 
+#Locating inverted repeats using self blast
+makeblastdb -in cp_scaffolded_linear.fasta -dbtype nucl -out cp_db
+
+blastn -db cp_scaffolded_linear.fasta -query cp_scaffolded_linear.fasta -outfmt 6 -out cp_sefl_blast.out -num_threads 40
+
+
+
+
 
 
 
