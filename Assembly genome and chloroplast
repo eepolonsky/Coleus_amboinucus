@@ -115,43 +115,35 @@ done
 grep -v "^>" cp_scaffolded.fasta | tr -d '\n' | sed '1i>scaffold' > cp_scaffolded_linear.fasta
 
 #Extracting inverted repeat gene regions
-awk '
-BEGIN {
-  while (getline gene < "gene_list.txt") genes[gene]=1;
-}
-$3 == "gene" {
-  split($9, attrs, ";");
-  for (i in attrs) {
-    if (attrs[i] ~ /^gene=/) {
-      split(attrs[i], kv, "=");
-      gene_name = kv[2];
-      if (gene_name in genes)
-        print $1, $4, $5, gene_name;
-    }
-  }
-}
-' GeSeqJob-20250705-173313_scaffold_GFF3.gff3 > filtered_genes_coordinates.tsv
-
-sort filtered_genes_coordinates.tsv | uniq > genes_no_duplicates.txt
-
-
-#assemble with repeat
-amtools faidx cp_scaffolded_linear.fasta scaffold:101255-125535 > repeat_region_101255_125535
+samtools faidx cp_scaffolded_linear.fasta scaffold:101255-125535 > repeat_region_101255_125535
 
 seqtk seq -r  repeat_region_101255_125535 > repeat_region_101255_125535_reverse_complement
 
-bioawk -c fastx '{print ">"$name"\n"substr($seq, 1, 82102)}' cp_scaffolded_linear.fasta > left_cp.fasta
+#assemble with repeat using python
+from Bio import SeqIO
 
-bioawk -c fastx '{print ">"$name"\n"substr($seq, 82103)}' cp_scaffolded_linear.fasta > right_cp.fasta
+# Files
+original_file = "cp_scaffolded_linear.fasta"
+insert_file = "repeat_region_101255_125535
+output_file = "cp_scaffolded_linear_with_repeat.fasta"
 
-cat left_cp.fasta repeat_region_101255_125535_reverse_complement right_cp.fasta > cp_scaffolded_linear_with_repeat.fasta
+# Insert before ndhF
+insert_pos = 82103
 
-(
-    echo ">cp_scaffolded_linear_with_repeat"
-    grep -v "^>" left_cp.fasta
-    grep -v "^>" cp_scaffolded_linear_with_repeat.fasta
-    grep -v "^>" right_cp.fasta
-) > cp_scaffolded_linear_with_repeat
+# Load sequences
+original = SeqIO.read(original_file, "fasta")
+insert = SeqIO.read(insert_file, "fasta")
+
+# Insert sequence at position
+new_seq = original.seq[:insert_pos] + insert.seq + original.seq[insert_pos:]
+original.seq = new_seq
+
+# Save
+SeqIO.write(original, output_file, "fasta")
+print(f"Inserted at position {insert_pos}, saved to {output_file}")
+
+
+
 
 
 
