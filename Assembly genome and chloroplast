@@ -74,9 +74,9 @@ nucmer  -p coleus_amboinicus_flye_cp  ~/Lamiaceae_Species_Files/Coleus_barbatus_
 
 delta-filter -1 coleus_amboinicus_flye_cp.delta > coleus_amboinicus_flye_cp.filtered.delta
 
-conda install -c conda-forge gnuplot=5.4
-
 mummerplot --filter -png  --layout -p coleus_amboinicus_flye_cp_plot coleus_amboinicus_flye_cp.filtered.delta
+
+show-coords -rcl coleus_amboinicus_cp.filtered.delta > show_coords.txt
 
 #Extracting sequences for cp assembly
 samtools faidx assembly.fasta contig_6:20755-26916 > contig_6:20755-26916_reverse
@@ -144,11 +144,14 @@ print(f"Inserted at position {insert_pos}, saved to {output_file}")
 
 
 
+#mummer on last scaffold fasta with repeat
+nucmer  -p coleus_amboinicus_cp  ~/Lamiaceae_Species_Files/Coleus_barbatus_genome/Plectranthus_barbatus_PP894695.1_cp.fasta  cp_scaffolded_linear_with_repeat.fasta
 
+delta-filter -1 coleus_amboinicus_cp.delta > coleus_amboinicus_cp.filtered.delta
 
+show-coords -rcl coleus_amboinicus_cp.filtered.delta > show_coords.txt
 
-
-
+mummerplot --filter -png  --layout -p coleus_amboinicus_flye_cp_plot coleus_amboinicus_flye_cp.filtered.delta
 
 
 
