@@ -148,8 +148,8 @@ show-coords -rcl coleus_amboinicus_cp.filtered.delta > show_coords.txt
 
 mummerplot --filter -png  --layout -p coleus_amboinicus_flye_cp_plot coleus_amboinicus_flye_cp.filtered.delta
 
-
-
+#map the chlorplast fastq reads to the chlorplast assembly (with repeat) 
+minimap2 -ax map-ont ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/flye_chloroplast/contig_segments/cp_scaffolded_linear_with_repeat.fasta amboinicus_cp_reads.fastq > cp_reads_fastq_mapping_to_scaffold_with_repeat.sam
 
 
 
