@@ -91,7 +91,6 @@ samtools faidx assembly.fasta contig_6:26919-52609 > contig_6:26919-52609
 seqtk seq -r contig_6:20755-26916_reverse > contig_6:20755-26916_reverse_complement.fa
 
 OUT="cp_scaffolded.fasta"
-N_GAP=100
 segments=(
   "contig_6:20755-26916_reverse_complement.fa"
   "contig_6:1-20629_reverse_complement.fa"
@@ -101,18 +100,14 @@ segments=(
   "contig_3:1-17648_reverse_complement.fa"
   "contig_6:26919-52609"
 )
-for f in "${segments[@]}"; do
-  header=$(basename "$f" .fa)
 
-  echo ">$header" >> "$OUT"
+> "$OUT"
+
+for f in "${segments[@]}"; do
   grep -v "^>" "$f" >> "$OUT"
-  if [[ "$f" != "${segments[-1]}" ]]; then
-    echo ">gap_${header}" >> "$OUT"
-    printf 'N%.0s' $(seq 1 $N_GAP) >> "$OUT"
-    echo "" >> "$OUT"
-  fi
 done
-grep -v "^>" cp_scaffolded.fasta | tr -d '\n' | sed '1i>scaffold' > cp_scaffolded_linear.fasta
+
+grep -v "^>" "$OUT" | tr -d '\n' | sed '1i>scaffold' > cp_scaffolded_linear.fasta
 
 #Extracting inverted repeat gene regions
 samtools faidx cp_scaffolded_linear.fasta scaffold:101255-125535 > repeat_region_101255_125535
@@ -124,11 +119,11 @@ from Bio import SeqIO
 
 # Files
 original_file = "cp_scaffolded_linear.fasta"
-insert_file = "repeat_region_101255_125535
+insert_file = "repeat_region_100655_124935
 output_file = "cp_scaffolded_linear_with_repeat.fasta"
 
 # Insert before ndhF
-insert_pos = 82103
+insert_pos = 81927
 
 # Load sequences
 original = SeqIO.read(original_file, "fasta")
