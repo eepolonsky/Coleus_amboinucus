@@ -57,7 +57,7 @@ conda install -c bioconda mummer
 
 circlator all --merge_min_id 85 --merge_breaklen 1000 assembly.fasta ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq circulator_cp
 
-Mummer-circulator
+#Mummer-circulator
 https://github.com/mummer4/mummer?tab=readme-ov-file
 nucmer  -p coleus_amboinicus_cp  ~/Lamiaceae_Species_Files/Coleus_barbatus_genome/Plectranthus_barbatus_PP894695.1_cp.fasta  ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/flye_chloroplast/circulator_cp/06.fixstart.fasta
 
@@ -152,4 +152,34 @@ mummerplot --filter -png  --layout -p coleus_amboinicus_flye_cp_plot coleus_ambo
 minimap2 -ax map-ont ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/flye_chloroplast/contig_segments/cp_scaffolded_linear_with_repeat.fasta amboinicus_cp_reads.fastq > cp_reads_fastq_mapping_to_scaffold_with_repeat.sam
 
 
+
+
+
+REDO ASSEMBLY PART POLISHING TWICE WITH RACON FIRST (medaka does not work with the amboinicus_cp_reads.fastq file)
+
+
+
+#polish with Racon x3 and medaka x1
+conda install -c bioconda racon
+
+minimap2 -x map-ont -t 8 assembly.fasta ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq > cp_racon_round1.paf
+racon -t 8 ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq cp_racon_round1.paf assembly.fasta > cp_polished_r1.fasta
+
+minimap2 -x map-ont -t 8 cp_polished_r1.fasta ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq > cp_racon_round2.paf
+racon -t 8 ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq cp_racon_round2.paf cp_polished_r1.fasta > cp_polished_r2.fasta
+
+minimap2 -x map-ont -t 8 cp_polished_r2.fasta ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq > cp_racon_round3.paf
+racon -t 8 ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq cp_racon_round3.paf cp_polished_r2.fasta > cp_polished_r3.fasta
+
+medaka_consensus -i ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq -d cp_polished_r3.fasta -o medaka_output -t 8 -m r1041_e82_400bps_sup_v5.0.0 ##did not work
+
+
+#Mummer-Flye
+nucmer  -p coleus_amboinicus_flye_cp_after_racon  ~/Lamiaceae_Species_Files/Coleus_barbatus_genome/Plectranthus_barbatus_PP894695.1_cp.fasta  ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/flye_chloroplast/cp_polished_r3.fasta
+
+delta-filter -1 coleus_amboinicus_flye_cp_after_racon.delta > coleus_amboinicus_flye_cp_after_racon.filtered.delta
+
+mummerplot --filter -png  --layout -p coleus_amboinicus_flye_cp_plot_after_racon coleus_amboinicus_flye_cp_after_racon.filtered.delta
+
+show-coords -rcl coleus_amboinicus_flye_cp_after_racon.filtered.delta > show_coords_after_racon.txt
 
