@@ -155,7 +155,7 @@ minimap2 -ax map-ont ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/de
 
 
 
-Polish with Racon (medaka does not work with the amboinicus_cp_reads.fastq file)
+Polishing!!!
 
 
 #polish with Racon x3 and medaka x1
@@ -170,19 +170,21 @@ racon -t 8 ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_output
 minimap2 -x map-ont -t 8 cp_with_repeat_polished_r2.fasta ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq > cp_with_repeat_polished_r3.paf
 racon -t 8 ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq cp_with_repeat_polished_r3.paf cp_with_repeat_polished_r2.fasta > cp_with_repeat_polished_r3.fasta
 
-medaka_consensus -i ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq -d cp_with_repeat_polished_r3.fasta -o medaka_output -t 8 -m r1041_e82_400bps_sup_v5.0.0 ##did not work
+medaka_consensus -i ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/all_used_barcodes.fastq -d cp_with_repeat_polished_r3.fasta -o medaka_output -t 8 -m r1041_e82_400bps_sup_v5.0.0
 
 #mummer on fasta with repeat polished
-nucmer  -p coleus_amboinicus_cp_polished  ~/Lamiaceae_Species_Files/Coleus_barbatus_genome/Plectranthus_barbatus_PP894695.1_cp.fasta  cp_with_repeat_polished_r3.fasta
+nucmer  -p coleus_amboinicus_cp_medaka_polished  ~/Lamiaceae_Species_Files/Coleus_barbatus_genome/Plectranthus_barbatus_PP894695.1_cp.fasta  consensus.fasta
 
-delta-filter -1 coleus_amboinicus_cp_polished.delta > coleus_amboinicus_cp_polished.filtered.delta
+delta-filter -1 coleus_amboinicus_cp_medaka_polished.delta > coleus_amboinicus_cp_medaka_polished.filtered.delta
 
-show-coords -rcl coleus_amboinicus_cp_polished.filtered.delta > show_coords_polished.txt
+show-coords -rcl coleus_amboinicus_cp_medaka_polished.filtered.delta > show_coords_medaka_polished.txt
 
-mummerplot --filter -png  --layout -p coleus_amboinicus_cp_plot_polished coleus_amboinicus_cp_polished.filtered.delta
+mummerplot --filter -png  --layout -p coleus_amboinicus_cp_plot_medaka_polished coleus_amboinicus_cp_medaka_polished.filtered.delta
 
 #map the chlorplast fastq reads to the chlorplast assembly (with repeat) after polishing
-minimap2 -ax map-ont ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/flye_chloroplast/contig_segments/cp_with_repeat_polished_r3.fasta amboinicus_cp_reads.fastq > cp_reads_fastq_mapping_to_scaffold_with_repeat_polished.sam
+minimap2 -ax map-ont ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/flye_chloroplast/contig_segments/medaka_output/consensus.fasta amboinicus_cp_reads.fastq > cp_reads_fastq_mapping_to_scaffold_with_repeat_polished.sam
+
+
 
 
 
