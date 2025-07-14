@@ -155,7 +155,7 @@ minimap2 -ax map-ont ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/de
 
 
 
-REDO ASSEMBLY PART POLISHING TWICE WITH RACON FIRST (medaka does not work with the amboinicus_cp_reads.fastq file)
+Polish with Racon (medaka does not work with the amboinicus_cp_reads.fastq file)
 
 
 #polish with Racon x3 and medaka x1
@@ -172,7 +172,7 @@ racon -t 8 ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_output
 
 medaka_consensus -i ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq -d cp_with_repeat_polished_r3.fasta -o medaka_output -t 8 -m r1041_e82_400bps_sup_v5.0.0 ##did not work
 
-#mummer on last scaffold fasta with repeat polished
+#mummer on fasta with repeat polished
 nucmer  -p coleus_amboinicus_cp_polished  ~/Lamiaceae_Species_Files/Coleus_barbatus_genome/Plectranthus_barbatus_PP894695.1_cp.fasta  cp_with_repeat_polished_r3.fasta
 
 delta-filter -1 coleus_amboinicus_cp_polished.delta > coleus_amboinicus_cp_polished.filtered.delta
