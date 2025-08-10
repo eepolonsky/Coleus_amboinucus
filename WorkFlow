@@ -61,9 +61,8 @@ samtools faidx cp_scaffolded_linear.fasta scaffold:101255-125535 > repeat_region
 
 seqtk seq -r  repeat_region_101255_125535 > repeat_region_101255_125535_reverse_complement
 
-...
-"""
 
+"""Pyhton script to insert repeat
 from Bio import SeqIO
 
 # Files
