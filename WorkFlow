@@ -1,28 +1,31 @@
-#Dorado basecalling and demux
+#!/bin/bash
+# ==============================================
+# Chloroplast genome assembly pipeline (ONT data)
+# ==============================================
+
+
+# Step 1: Basecalling and demultiplexing
 dorado basecaller dna_r10.4.1_e8.2_apk_sup@v5.0.0 . --kit-name SQK-RBK114-24 > basecall.bam
 dorado demux --emit-fastq --output-dir demux_output --no-classify basecall.bam
 
-#Chloroplast assembly
+# Step 2: Download chloroplast reference
 efetch -db nucleotide -id PP894695.1 -format fasta > Plectranthus_barbatus_PP894695.1_cp.fasta
 
+# Step 3: Map reads to reference chloroplast genome
 minimap2 -ax map-ont ~/Lamiaceae_Species_Files/Coleus_barbatus_genome/Plectranthus_barbatus_PP894695.1_cp.fasta all_used_barcodes.fastq > cp_mapping.sam
-
 samtools view -Sb -F 4 cp_mapping.sam > cp_mapping.bam
-
 samtools fastq cp_mapping.bam > amboinicus_cp_reads.fastq
 
+# Step 4: Chloroplast assembly with Flye
 flye --nano-raw amboinicus_cp_reads.fastq --out-dir flye_chloroplast --genome-size 150k --threads 8
 
-#Mummer map to refernce
+# Step 5: Compare assembly to reference using MUMmer
 nucmer  -p coleus_amboinicus_flye_cp  ~/Lamiaceae_Species_Files/Coleus_barbatus_genome/Plectranthus_barbatus_PP894695.1_cp.fasta  ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/flye_chloroplast/assembly.fasta
-
 delta-filter -1 coleus_amboinicus_flye_cp.delta > coleus_amboinicus_flye_cp.filtered.delta
-
 mummerplot --filter -png  --layout -p coleus_amboinicus_flye_cp_plot coleus_amboinicus_flye_cp.filtered.delta
-
 show-coords -rcl coleus_amboinicus_cp.filtered.delta > show_coords.txt
 
-#Extracting sequences for assembly
+# Step 6: Extract contigs of interest
 samtools faidx assembly.fasta contig_6:20755-26916 > contig_6:20755-26916_reverse
 samtools faidx assembly.fasta contig_6:1-20629 > contig_6:1-20629_reverse
 samtools faidx assembly.fasta contig_2:1-5129 > contig_2:1-5129
@@ -31,12 +34,13 @@ samtools faidx assembly.fasta contig_4:1-42648 > contig_4:1-42648_reverse
 samtools faidx assembly.fasta contig_3:1-17648 > contig_3:1-17648_reverse
 samtools faidx assembly.fasta contig_6:26919-52609 > contig_6:26919-52609
 
-#reverse complement files
+# Step 7: Reverse-complement selected contigs
 seqtk seq -r contig_6:20755-26916_reverse > contig_6:20755-26916_reverse_complement.fa
 seqtk seq -r contig_6:1-20629_reverse > contig_6:1-20629_reverse_complement.fa
 seqtk seq -r contig_6:1-42648_reverse > contig_6:1-42648_reverse_complement.fa
 seqtk seq -r contig_6:1-17648_reverse > contig_6:1-17648_reverse_complement.fa
 
+# Step 8: Concatenate contigs into a scaffold
 OUT="cp_scaffolded.fasta"
 segments=(
   "contig_6:20755-26916_reverse_complement.fa"
@@ -56,57 +60,35 @@ done
 
 grep -v "^>" "$OUT" | tr -d '\n' | sed '1i>scaffold' > cp_scaffolded_linear.fasta
 
-#Extracting inverted repeat gene regions
+# Step 9: Extract and duplicate inverted repeat region
 samtools faidx cp_scaffolded_linear.fasta scaffold:101255-125535 > repeat_region_101255_125535
-
 seqtk seq -r  repeat_region_101255_125535 > repeat_region_101255_125535_reverse_complement
 
 
-"""Pyhton script to insert repeat
-from Bio import SeqIO
+# Step 10: Run pyhton scirpt
+python insert_repeat.py
 
-# Files
-original_file = "cp_scaffolded_linear.fasta"
-insert_file = "repeat_region_100655_124935"
-output_file = "cp_scaffolded_linear_with_repeat.fasta"
+# Step 11: Polishing (Racon x3 + Medaka)
+# Install tools if needed
+# conda install -c bioconda racon medaka
 
-# Insert before ndhF
-insert_pos = 81927
-
-# Load sequences
-original = SeqIO.read(original_file, "fasta")
-insert = SeqIO.read(insert_file, "fasta")
-
-# Insert sequence at position
-new_seq = original.seq[:insert_pos] + insert.seq + original.seq[insert_pos:]
-original.seq = new_seq
-
-# Save
-SeqIO.write(original, output_file, "fasta")
-print(f"Inserted at position {insert_pos}, saved to {output_file}")
-"""
-
-#polish with Racon x3 and medaka x1
-conda install -c bioconda racon
-
+# Racon polishing rounds
 minimap2 -x map-ont -t 8 cp_scaffolded_linear_with_repeat.fasta ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq > cp_with_repeat_polished_r1.paf
 racon -t 8 ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq cp_with_repeat_polished_r1.paf cp_scaffolded_linear_with_repeat.fasta > cp_with_repeat_polished_r1.fasta
-
 minimap2 -x map-ont -t 8 cp_with_repeat_polished_r1.fasta ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq > cp_with_repeat_polished_r2.paf
 racon -t 8 ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq cp_with_repeat_polished_r2.paf cp_with_repeat_polished_r1.fasta > cp_with_repeat_polished_r2.fasta
-
 minimap2 -x map-ont -t 8 cp_with_repeat_polished_r2.fasta ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq > cp_with_repeat_polished_r3.paf
 racon -t 8 ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/amboinicus_cp_reads.fastq cp_with_repeat_polished_r3.paf cp_with_repeat_polished_r2.fasta > cp_with_repeat_polished_r3.fasta
 
+# Step 11: Polishing (Racon x3 + Medaka)
+# Install tools if needed
+# conda install -c bioconda racon medaka
 medaka_consensus -i ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/all_used_barcodes.fastq -d cp_with_repeat_polished_r3.fasta -o medaka_output -t 8 -m r1041_e82_400bps_sup_v5.0.0
 
-#mummer
+# Step 12: Final evaluation with MUMmer
 nucmer  -p coleus_amboinicus_cp_medaka_polished  ~/Lamiaceae_Species_Files/Coleus_barbatus_genome/Plectranthus_barbatus_PP894695.1_cp.fasta  consensus.fasta
-
 delta-filter -1 coleus_amboinicus_cp_medaka_polished.delta > coleus_amboinicus_cp_medaka_polished.filtered.delta
-
 show-coords -rcl coleus_amboinicus_cp_medaka_polished.filtered.delta > show_coords_medaka_polished.txt
-
 mummerplot --filter -png  --layout -p coleus_amboinicus_cp_plot_medaka_polished coleus_amboinicus_cp_medaka_polished.filtered.delta
 
 
