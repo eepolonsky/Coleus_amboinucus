@@ -1,3 +1,8 @@
+#!/usr/bin/env python3
+# =======================================================
+# Insert inverted repeat into chloroplast genome assembly
+# =======================================================
+
 from Bio import SeqIO
 
 # Files
