@@ -19,7 +19,7 @@ samtools fastq cp_mapping.bam > amboinicus_cp_reads.fastq
 # Step 4: Chloroplast assembly with Flye
 flye --nano-raw amboinicus_cp_reads.fastq --out-dir flye_chloroplast --genome-size 150k --threads 8
 
-# Step 5: Compare assembly to reference using MUMmer
+# Step 5: Compare assembly to reference using MUMmer4
 nucmer  -p coleus_amboinicus_flye_cp  ~/Lamiaceae_Species_Files/Coleus_barbatus_genome/Plectranthus_barbatus_PP894695.1_cp.fasta  ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/flye_chloroplast/assembly.fasta
 delta-filter -1 coleus_amboinicus_flye_cp.delta > coleus_amboinicus_flye_cp.filtered.delta
 mummerplot --filter -png  --layout -p coleus_amboinicus_flye_cp_plot coleus_amboinicus_flye_cp.filtered.delta
@@ -64,7 +64,6 @@ grep -v "^>" "$OUT" | tr -d '\n' | sed '1i>scaffold' > cp_scaffolded_linear.fast
 samtools faidx cp_scaffolded_linear.fasta scaffold:101255-125535 > repeat_region_101255_125535
 seqtk seq -r  repeat_region_101255_125535 > repeat_region_101255_125535_reverse_complement
 
-
 # Step 10: Run pyhton scirpt
 python insert_repeat.py
 
@@ -85,7 +84,7 @@ racon -t 8 ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_output
 # conda install -c bioconda racon medaka
 medaka_consensus -i ~/coleus_amboinicus/no_sample_id/nanopore_data/pod5_skip/demux_outputs_fastq/all_used_barcodes.fastq -d cp_with_repeat_polished_r3.fasta -o medaka_output -t 8 -m r1041_e82_400bps_sup_v5.0.0
 
-# Step 12: Final evaluation with MUMmer
+# Step 12: Final evaluation with MUMmer4
 nucmer  -p coleus_amboinicus_cp_medaka_polished  ~/Lamiaceae_Species_Files/Coleus_barbatus_genome/Plectranthus_barbatus_PP894695.1_cp.fasta  consensus.fasta
 delta-filter -1 coleus_amboinicus_cp_medaka_polished.delta > coleus_amboinicus_cp_medaka_polished.filtered.delta
 show-coords -rcl coleus_amboinicus_cp_medaka_polished.filtered.delta > show_coords_medaka_polished.txt
