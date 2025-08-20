@@ -1,9 +1,9 @@
 from Bio import SeqIO
 
 # Files
-original_file = "cp_scaffolded_linear_noN.fasta"
+original_file = "cp_scaffolded_linear.fasta"
 insert_file = "repeat_region_101255_125535_reverse_complement"
-output_file = "cp_scaffolded_linear_with_repeat_noN.fasta"
+output_file = "cp_scaffolded_linear_with_repeat.fasta"
 
 # Insert after ndhF
 insert_pos = 81927
