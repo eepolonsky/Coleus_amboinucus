@@ -20,9 +20,10 @@ cat 173e2c0e-3aae-4825-a2cf-18f1ce304370_SQK-RBK114-24_barcode01.fastq \
 
 # Step 4: Map reads to reference chloroplast genome
 minimap2 -ax map-ont /path/to/Plectranthus_barbatus_PP894695.1_cp.fasta /path/to/all_used_barcodes.fastq > cp_mapping.sam
+
+# Convert sam file to fastq file for assembly
 samtools view -Sb -F 4 cp_mapping.sam > cp_mapping.bam
 samtools fastq cp_mapping.bam > amboinicus_cp_reads.fastq
-
 # Step 5: Chloroplast assembly with Flye
 flye --nano-raw amboinicus_cp_reads.fastq --out-dir flye_chloroplast --genome-size 150k --threads 8
 
